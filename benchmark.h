@@ -356,79 +356,138 @@ struct MemBenchResult {
     double stackBstOsRssKb;
 };
 
-inline vector<MemBenchResult> runMemoryBenchmark(const vector<int>& sizes) {
-    vector<MemBenchResult> results;
+inline void runSingleMemoryBenchmark(const string& type, int N) {
     mt19937 rng(42);
+    auto dataset = getBenchmarkDataset(N, rng);
+    
+    double theoreticalKb = 0.0;
+    double osRssKb = 0.0;
+    
+    if (type == "LL_HashMap") {
+        size_t beforeOS = getOSMemoryUsage();
+        DocManagerLinkedList* m = new DocManagerLinkedList();
+        for (auto& r : dataset) {
+            if (!m->searchById(r.docId))
+                m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
+            else
+                m->addVersion(r.docId, r.date, r.editor, r.content);
+        }
+        size_t afterOS = getOSMemoryUsage();
+        theoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
+        osRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
+        delete m;
+    } else if (type == "Stack_HashMap") {
+        size_t beforeOS = getOSMemoryUsage();
+        DocManagerStack* m = new DocManagerStack();
+        for (auto& r : dataset) {
+            if (!m->searchById(r.docId))
+                m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
+            else
+                m->addVersion(r.docId, r.date, r.editor, r.content);
+        }
+        size_t afterOS = getOSMemoryUsage();
+        theoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
+        osRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
+        delete m;
+    } else if (type == "LL_BST") {
+        size_t beforeOS = getOSMemoryUsage();
+        DocManagerBSTLinkedList* m = new DocManagerBSTLinkedList();
+        for (auto& r : dataset) {
+            if (!m->searchById(r.docId))
+                m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
+            else
+                m->addVersion(r.docId, r.date, r.editor, r.content);
+        }
+        size_t afterOS = getOSMemoryUsage();
+        theoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
+        osRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
+        delete m;
+    } else if (type == "Stack_BST") {
+        size_t beforeOS = getOSMemoryUsage();
+        DocManagerBSTStack* m = new DocManagerBSTStack();
+        for (auto& r : dataset) {
+            if (!m->searchById(r.docId))
+                m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
+            else
+                m->addVersion(r.docId, r.date, r.editor, r.content);
+        }
+        size_t afterOS = getOSMemoryUsage();
+        theoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
+        osRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
+        delete m;
+    }
+    
+    cout << "RESULT " << fixed << setprecision(6) << theoreticalKb << " " << osRssKb << "\n";
+}
+
+inline std::pair<double, double> execSingleMemBenchmark(const string& exePath, const string& type, int N) {
+    string cmd = "\"" + exePath + "\" --bench-mem-single " + type + " " + to_string(N);
+    
+#ifdef _WIN32
+    FILE* pipe = _popen(cmd.c_str(), "r");
+#else
+    FILE* pipe = popen(cmd.c_str(), "r");
+#endif
+
+    if (!pipe) {
+        return {0.0, 0.0};
+    }
+    
+    char buffer[256];
+    double theoreticalKb = 0.0;
+    double osRssKb = 0.0;
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        string line(buffer);
+        if (line.rfind("RESULT ", 0) == 0) {
+            stringstream ss(line.substr(7));
+            ss >> theoreticalKb >> osRssKb;
+        }
+    }
+
+#ifdef _WIN32
+    _pclose(pipe);
+#else
+    pclose(pipe);
+#endif
+
+    return {theoreticalKb, osRssKb};
+}
+
+inline vector<MemBenchResult> runMemoryBenchmark(const vector<int>& sizes, const string& exePath) {
+    vector<MemBenchResult> results;
 
     for (int N : sizes) {
-        cout << "\n[Memory Benchmark] N = " << N << " records...\n";
-        auto dataset = getBenchmarkDataset(N, rng);
+        cout << "\n[Memory Benchmark] N = " << N << " records (spawning subprocesses)...\n";
 
         MemBenchResult res;
         res.dataSize = N;
 
         // --- Benchmark LL HashMap Memory ---
         {
-            size_t beforeOS = getOSMemoryUsage();
-            DocManagerLinkedList* m = new DocManagerLinkedList();
-            for (auto& r : dataset) {
-                if (!m->searchById(r.docId))
-                    m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
-                else
-                    m->addVersion(r.docId, r.date, r.editor, r.content);
-            }
-            size_t afterOS = getOSMemoryUsage();
-            res.llHashMapTheoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
-            res.llHashMapOsRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
-            delete m;
+            auto resPair = execSingleMemBenchmark(exePath, "LL_HashMap", N);
+            res.llHashMapTheoreticalKb = resPair.first;
+            res.llHashMapOsRssKb = resPair.second;
         }
 
         // --- Benchmark Stack HashMap Memory ---
         {
-            size_t beforeOS = getOSMemoryUsage();
-            DocManagerStack* m = new DocManagerStack();
-            for (auto& r : dataset) {
-                if (!m->searchById(r.docId))
-                    m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
-                else
-                    m->addVersion(r.docId, r.date, r.editor, r.content);
-            }
-            size_t afterOS = getOSMemoryUsage();
-            res.stackHashMapTheoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
-            res.stackHashMapOsRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
-            delete m;
+            auto resPair = execSingleMemBenchmark(exePath, "Stack_HashMap", N);
+            res.stackHashMapTheoreticalKb = resPair.first;
+            res.stackHashMapOsRssKb = resPair.second;
         }
 
         // --- Benchmark LL BST Memory ---
         {
-            size_t beforeOS = getOSMemoryUsage();
-            DocManagerBSTLinkedList* m = new DocManagerBSTLinkedList();
-            for (auto& r : dataset) {
-                if (!m->searchById(r.docId))
-                    m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
-                else
-                    m->addVersion(r.docId, r.date, r.editor, r.content);
-            }
-            size_t afterOS = getOSMemoryUsage();
-            res.llBstTheoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
-            res.llBstOsRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
-            delete m;
+            auto resPair = execSingleMemBenchmark(exePath, "LL_BST", N);
+            res.llBstTheoreticalKb = resPair.first;
+            res.llBstOsRssKb = resPair.second;
         }
 
         // --- Benchmark Stack BST Memory ---
         {
-            size_t beforeOS = getOSMemoryUsage();
-            DocManagerBSTStack* m = new DocManagerBSTStack();
-            for (auto& r : dataset) {
-                if (!m->searchById(r.docId))
-                    m->insertDocument(r.docId, r.docName, r.date, r.editor, r.content);
-                else
-                    m->addVersion(r.docId, r.date, r.editor, r.content);
-            }
-            size_t afterOS = getOSMemoryUsage();
-            res.stackBstTheoreticalKb = (double)m->getMemoryUsageBytes() / 1024.0;
-            res.stackBstOsRssKb = (afterOS > beforeOS) ? (double)(afterOS - beforeOS) / 1024.0 : 0.0;
-            delete m;
+            auto resPair = execSingleMemBenchmark(exePath, "Stack_BST", N);
+            res.stackBstTheoreticalKb = resPair.first;
+            res.stackBstOsRssKb = resPair.second;
         }
 
         results.push_back(res);
@@ -436,6 +495,10 @@ inline vector<MemBenchResult> runMemoryBenchmark(const vector<int>& sizes) {
              << " KB | Stack_HM: " << res.stackHashMapTheoreticalKb 
              << " KB | LL_BST: " << res.llBstTheoreticalKb 
              << " KB | Stack_BST: " << res.stackBstTheoreticalKb << " KB\n";
+        cout << "  OS RSS REAL -> LL_HM: " << res.llHashMapOsRssKb 
+             << " KB | Stack_HM: " << res.stackHashMapOsRssKb 
+             << " KB | LL_BST: " << res.llBstOsRssKb 
+             << " KB | Stack_BST: " << res.stackBstOsRssKb << " KB\n";
     }
     return results;
 }

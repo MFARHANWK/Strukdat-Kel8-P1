@@ -17,7 +17,7 @@ void printHeader() {
     cout << "╚══════════════════════════════════════════════════════╝\n";
 }
 
-void menuCLI() {
+void menuCLI(string argv0) {
     DocManagerLinkedList sysLL;
     DocManagerStack      sysStack;
     DocManagerBSTLinkedList sysBSTLL;
@@ -233,7 +233,7 @@ void menuCLI() {
             cout << "Menguji dengan N = 100, 1000, 5000, 10000, 50000 records...\n\n";
 
             vector<int> sizes = {100, 1000, 5000, 10000, 50000};
-            auto results = runMemoryBenchmark(sizes);
+            auto results = runMemoryBenchmark(sizes, argv0);
             saveMemoryBenchmarkCSV(results, "benchmark_memory.csv");
 
             cout << "\n[Selesai] Cek file benchmark_memory.csv untuk data lengkap.\n";
@@ -253,6 +253,16 @@ void menuCLI() {
 // MAIN
 // ============================================================
 int main(int argc, char* argv[]) {
+    if (argc > 3 && string(argv[1]) == "--bench-mem-single") {
+        string type = argv[2];
+        int N = stoi(argv[3]);
+        runSingleMemoryBenchmark(type, N);
+        return 0;
+    }
+
+    string argv0 = "./doc_version_system";
+    if (argc > 0) argv0 = argv[0];
+
     if (argc > 1 && string(argv[1]) == "--benchmark") {
         // Mode benchmark otomatis (tanpa CLI)
         cout << "=== MODE BENCHMARK OTOMATIS ===\n";
@@ -263,11 +273,11 @@ int main(int argc, char* argv[]) {
         saveBenchmarkCSV(results, "benchmark_results.csv");
 
         cout << "\n--- RUNNING MEMORY BENCHMARK ---\n";
-        auto memResults = runMemoryBenchmark(sizes);
+        auto memResults = runMemoryBenchmark(sizes, argv0);
         saveMemoryBenchmarkCSV(memResults, "benchmark_memory.csv");
         return 0;
     }
 
-    menuCLI();
+    menuCLI(argv0);
     return 0;
 }
