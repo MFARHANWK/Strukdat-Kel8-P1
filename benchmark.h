@@ -103,6 +103,55 @@ vector<SyntheticRecord> generateDataset(int n, mt19937& rng) {
     return data;
 }
 
+inline vector<SyntheticRecord> loadDatasetFromCSV(const string& filename, int n) {
+    vector<SyntheticRecord> data;
+    ifstream f(filename);
+    if (!f.is_open()) {
+        return data;
+    }
+    string line;
+    if (!getline(f, line)) return data; // skip header
+    
+    int count = 0;
+    while (getline(f, line) && count < n) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        if (line.empty()) continue;
+        vector<string> cols = parseCSVLine(line);
+        if (cols.size() < 7) continue;
+
+        SyntheticRecord r;
+        r.docId = cols[1];
+        r.docName = cols[2];
+        r.date = cols[4];
+        r.editor = cols[6];
+        string invoice = cols[0];
+        string qty = cols[3];
+        string price = cols[5];
+
+        if (r.docId.empty()) continue;
+        if (r.docName.empty()) r.docName = "Unnamed Document";
+        if (r.editor.empty()) r.editor = "Unknown";
+        r.content = "Invoice: " + invoice + ", Qty: " + qty + ", Price: " + price;
+
+        data.push_back(r);
+        count++;
+    }
+    f.close();
+    return data;
+}
+
+inline vector<SyntheticRecord> getBenchmarkDataset(int n, mt19937& rng, const string& csvFilename = "Untitled spreadsheet - Year 2009-2010.csv") {
+    auto data = loadDatasetFromCSV(csvFilename, n);
+    if ((int)data.size() < n) {
+        cout << "[Benchmark] Menggunakan data sintetis (fallback) karena file CSV tidak ditemukan atau baris kurang dari " << n << ".\n";
+        return generateDataset(n, rng);
+    }
+    cout << "[Benchmark] Berhasil memuat " << data.size() << " baris dari CSV asli (" << csvFilename << ").\n";
+    return data;
+}
+
 // ============================================================
 // EXPERIMENT RUNNER
 // ============================================================
@@ -122,7 +171,7 @@ vector<BenchResult> runBenchmark(const vector<int>& sizes) {
 
     for (int N : sizes) {
         cout << "\n[Benchmark] N = " << N << " records...\n";
-        auto dataset = generateDataset(N, rng);
+        auto dataset = getBenchmarkDataset(N, rng);
 
         // -------- INSERT --------
         {
@@ -291,7 +340,7 @@ inline vector<MemBenchResult> runMemoryBenchmark(const vector<int>& sizes) {
 
     for (int N : sizes) {
         cout << "\n[Memory Benchmark] N = " << N << " records...\n";
-        auto dataset = generateDataset(N, rng);
+        auto dataset = getBenchmarkDataset(N, rng);
 
         MemBenchResult res;
         res.dataSize = N;

@@ -78,12 +78,13 @@ Setelah proses selesai, hasil pengujian akan ditulis pada berkas:
 
 ---
 
-## 📊 Rangkuman Hasil Analisis ($N = 100.000$ records)
+## 📊 Rangkuman Hasil Analisis ($N = 100.000$ records dari CSV Ritel Ril)
 
 ### Kinerja Waktu INSERT (Waktu Pemrosesan)
-- **Hash Map** (`LL_HashMap` / `Stack_HashMap`): **~37 - 40 ms** (Sangat Cepat — $\mathcal{O}(1)$ average).
-- **BST** (`LL_BST` / `Stack_BST`): **~4800 ms** (Lebih Lambat — $\mathcal{O}(\log N)$ average dengan overhead pembandingan leksikografis kunci string).
+- **Hash Map** (`LL_HashMap` / `Stack_HashMap`): **~24 ms** (Sangat Cepat — $\mathcal{O}(1)$ average).
+- **BST** (`LL_BST` / `Stack_BST`): **~49 - 50 ms** (Cepat — $\mathcal{O}(\log N)$ berkat distribusi ID data transaksi ril yang acak sehingga pohon tetap seimbang secara alami, berbanding terbalik dengan data sintetis terurut leksikografis yang menyebabkan degenerasi pohon / *skewed tree* menjadi ~4800 ms).
 
 ### Konsumsi Memori Teoretis Heap
-- **BST**: Sedikit lebih besar pada volume data besar karena overhead pointer ganda (`left` dan `right` total 16 byte per simpul pada sistem 64-bit), dibandingkan Hash Map dengan separate chaining yang hanya menggunakan satu pointer chain (`next` 8 byte per simpul).
-- **Stack (Vector-based)**: Menggunakan alokasi heap sedikit lebih tinggi daripada Singly Linked List karena faktor pelipatgandaan kapasitas vector (vector capacity doubling), namun memiliki performa waktu operasi rollback dan akses versi secara konstan ($\mathcal{O}(1)$).
+- **BST** (`LL_BST` / `Stack_BST`): **~18.2 MB** (Sedikit lebih besar pada volume data besar karena overhead pointer anak ganda `left` dan `right` sebesar 16 byte per node pada sistem 64-bit).
+- **Hash Map** (`LL_HashMap` / `Stack_HashMap`): **~18.1 MB** (Menggunakan pointer chain `next` tunggal sebesar 8 byte per node).
+- **Stack (Vector-based)**: Menggunakan alokasi heap sedikit lebih tinggi daripada Singly Linked List karena faktor pelipatgandaan kapasitas vector (*vector capacity doubling*), namun memiliki performa waktu operasi rollback dan akses versi secara konstan ($\mathcal{O}(1)$).
