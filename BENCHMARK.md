@@ -15,7 +15,7 @@ Modul benchmark performa dirancang untuk menguji efisiensi durasi waktu dari emp
    - Operasi ini menggabungkan performa indeks pencarian (**HashMap vs BST**) dan kontainer riwayat versi (**LinkedList vs Stack**).
 2. **SEARCH (Pencarian by ID)**:
    - Menguji kecepatan pencarian pointer dokumen berdasarkan ID uniknya.
-   - Operasi pencarian mikro ini diulang sebanyak **1.000 kali** (`reps = 1000`) pada elemen tengah dataset untuk meredam fluktuasi *scheduling CPU* dan menghasilkan durasi rata-rata yang presisi.
+   - Operasi pencarian mikro ini diulang sebanyak **100.000 kali** (`reps = 100000`) pada elemen tengah dataset untuk meredam fluktuasi *scheduling CPU* dan menghasilkan durasi rata-rata yang presisi.
 3. **ROLLBACK (Pembuangan Versi Teratas)**:
    - Menguji kecepatan mencabut versi teratas (terbaru) dari dokumen dan mengembalikan status ke versi sebelumnya.
    - Pengulangan dilakukan sebanyak $\min(100, N/5)$ untuk mengukur durasi rata-rata yang stabil.

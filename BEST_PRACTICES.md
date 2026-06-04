@@ -121,9 +121,14 @@ Simpan hasil pengujian benchmark langsung ke file CSV dari program C++ Anda agar
 ```cpp
 void saveBenchmarkCSV(const vector<BenchResult>& results, const string& filename) {
     ofstream f(filename);
-    f << "Operation,DataSize,LinkedList_ms,Stack_ms\n";
+    f << "Operation,DataSize,LL_HashMap_ms,Stack_HashMap_ms,LL_BST_ms,Stack_BST_ms\n";
     for (auto& r : results) {
-        f << r.operation << "," << r.dataSize << "," << r.llTimeMs << "," << r.stackTimeMs << "\n";
+        f << r.operation << ","
+          << r.dataSize << ","
+          << fixed << setprecision(6) << r.llHashMapTimeMs << ","
+          << r.stackHashMapTimeMs << ","
+          << r.llBstTimeMs << ","
+          << r.stackBstTimeMs << "\n";
     }
     f.close();
 }

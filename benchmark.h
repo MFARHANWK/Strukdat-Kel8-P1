@@ -227,26 +227,48 @@ vector<BenchResult> runBenchmark(const vector<int>& sizes) {
             // -------- SEARCH --------
             {
                 string targetId = dataset[N/2].docId;
-                int reps = 1000;
+                int reps = 100000;
+                long long dummyCheck = 0;
 
                 t.reset();
-                for (int i = 0; i < reps; i++) mllHashMap.searchById(targetId);
+                for (int i = 0; i < reps; i++) {
+                    if (mllHashMap.searchById(targetId)) {
+                        dummyCheck++;
+                    }
+                }
                 double llHmS = t.elapsedMs() / reps;
 
                 t.reset();
-                for (int i = 0; i < reps; i++) mstHashMap.searchById(targetId);
+                for (int i = 0; i < reps; i++) {
+                    if (mstHashMap.searchById(targetId)) {
+                        dummyCheck++;
+                    }
+                }
                 double stHmS = t.elapsedMs() / reps;
 
                 t.reset();
-                for (int i = 0; i < reps; i++) mllBST.searchById(targetId);
+                for (int i = 0; i < reps; i++) {
+                    if (mllBST.searchById(targetId)) {
+                        dummyCheck++;
+                    }
+                }
                 double llBstS = t.elapsedMs() / reps;
 
                 t.reset();
-                for (int i = 0; i < reps; i++) mstBST.searchById(targetId);
+                for (int i = 0; i < reps; i++) {
+                    if (mstBST.searchById(targetId)) {
+                        dummyCheck++;
+                    }
+                }
                 double stBstS = t.elapsedMs() / reps;
 
+                // Force compiler to keep the loops
+                if (dummyCheck == 999999999) {
+                    cout << "Prevent optimization: " << dummyCheck << "\n";
+                }
+
                 results.push_back({"SEARCH", N, llHmS, stHmS, llBstS, stBstS});
-                cout << "  SEARCH  -> LL_HM: " << llHmS << " ms | Stack_HM: " << stHmS << " ms | LL_BST: " << llBstS << " ms | Stack_BST: " << stBstS << " ms\n";
+                cout << "  SEARCH  -> LL_HM: " << fixed << setprecision(6) << llHmS << " ms | Stack_HM: " << stHmS << " ms | LL_BST: " << llBstS << " ms | Stack_BST: " << stBstS << " ms\n";
             }
 
             // -------- ROLLBACK --------
